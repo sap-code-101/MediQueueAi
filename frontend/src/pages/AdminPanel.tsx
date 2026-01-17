@@ -52,9 +52,10 @@ const AdminPanel: React.FC = () => {
     const loadDoctors = async () => {
         try {
             const data = await fetchDoctors();
-            setDoctors(data);
+            setDoctors(Array.isArray(data) ? data : []);
         } catch (e) {
             console.error('Failed to fetch doctors:', e);
+            setDoctors([]);
         }
     };
 
@@ -62,9 +63,10 @@ const AdminPanel: React.FC = () => {
         setLoading(true);
         try {
             const res = await api.get('/users');
-            setUsers(res.data);
+            setUsers(Array.isArray(res.data) ? res.data : []);
         } catch (e) {
             console.error('Failed to fetch users:', e);
+            setUsers([]);
         } finally {
             setLoading(false);
         }

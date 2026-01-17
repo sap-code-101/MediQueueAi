@@ -40,9 +40,11 @@ const PatientPortal: React.FC = () => {
         const loadData = async () => {
             try {
                 const availableDoctors = await fetchAvailableDoctors();
-                setDoctors(availableDoctors);
+                // Always normalize to an array to avoid map() crashing when API returns non-array
+                setDoctors(Array.isArray(availableDoctors) ? availableDoctors : []);
             } catch (error) {
                 console.error('Failed to load doctors');
+                setDoctors([]);
             } finally {
                 setLoading(false);
             }
@@ -374,7 +376,7 @@ const PatientPortal: React.FC = () => {
                             <p className="section-subtitle">Select from our available healthcare professionals</p>
                         </div>
 
-                        {doctors.length === 0 ? (
+                        {!Array.isArray(doctors) || doctors.length === 0 ? (
                             <div className="empty-state">
                                 <div className="empty-state-icon">
                                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -391,7 +393,7 @@ const PatientPortal: React.FC = () => {
                             </div>
                         ) : (
                             <div className="grid grid-cols-2" style={{ gap: 'var(--space-6)' }}>
-                                {doctors.map((doctor) => (
+                                {Array.isArray(doctors) && doctors.map((doctor) => (
                                     <div
                                         key={doctor.id}
                                         className={`doctor-card ${selectedDoctor?.id === doctor.id ? 'selected' : ''}`}
