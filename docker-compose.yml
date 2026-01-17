@@ -1,0 +1,41 @@
+# MediQueueAI - Docker Compose Configuration
+# 
+# USAGE:
+#   LICENSE_KEY=MQAI-XXXX-XXXX-XXXX docker compose up -d
+#
+# The LICENSE_KEY becomes your admin password.
+# Purchase a license at: https://mediqueueai.com (your documentation site)
+
+services:
+  mediqueueai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mediqueueai
+    ports:
+      - "5000:5000"  # Backend API
+      - "3000:3000"  # Frontend
+    volumes:
+      - db_data:/app/database           # Persist SQLite DB
+      - ml_models:/app/ml/models        # Persist trained models
+      - uploads:/app/uploads            # Persist uploaded files
+    environment:
+      - NODE_ENV=production
+      - LICENSE_KEY=${LICENSE_KEY:-}
+      - JWT_SECRET=${JWT_SECRET:-mediqueueai_secret_change_in_production}
+      - DB_PATH=/app/database/queue.db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/doctors"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  db_data:
+    name: mediqueueai_db
+  ml_models:
+    name: mediqueueai_models
+  uploads:
+    name: mediqueueai_uploads

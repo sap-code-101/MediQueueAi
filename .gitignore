@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+.env
+*.db
+*.log
+.DS_Store
+uploads/
+ml/models/*.pkl
+ml/models/*.joblib
+ml/data/*.csv
+backend/bun.lockb
+frontend/bun.lockb
+*.swp
+*.swo
+.vscode/
+.idea/
