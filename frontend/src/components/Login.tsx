@@ -142,6 +142,93 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               </p>
             </div>
 
+            {/* Demo Login Buttons */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#64748b' }}>Quick Demo Access</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
+                <button
+                  type="button"
+                  onClick={() => onLogin('demo-token', 'doctor', 'doctor1', 'Dr. Smith')}
+                  style={{
+                    padding: '0.75rem',
+                    background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Doctor
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onLogin('demo-token', 'receptionist', undefined, 'Reception')}
+                  style={{
+                    padding: '0.75rem',
+                    background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Reception
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onLogin('demo-token', 'admin', undefined, 'Admin')}
+                  style={{
+                    padding: '0.75rem',
+                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onLogin('demo-token', 'clinic_staff', undefined, 'Clinic Staff')}
+                  style={{
+                    padding: '0.75rem',
+                    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Clinic Staff
+                </button>
+              </div>
+            </div>
+
+            <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
+              <div style={{ borderTop: '1px solid #e2e8f0' }} />
+              <span style={{
+                position: 'absolute',
+                top: '-0.625rem',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                background: 'white',
+                padding: '0 0.75rem',
+                fontSize: '0.75rem',
+                color: '#94a3b8'
+              }}>OR LOGIN MANUALLY</span>
+            </div>
+
             {/* Error Message */}
             {error && (
               <div style={{

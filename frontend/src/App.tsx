@@ -149,7 +149,7 @@ function App() {
             case 'admin': return '/admin';
             case 'receptionist': return '/receptionist';
             case 'clinic_staff': return '/clinic-staff';
-            default: return '/patient';
+            default: return '/';
         }
     };
 
@@ -160,12 +160,12 @@ function App() {
                     {/* Landing page */}
                     <Route path="/" element={<Home />} />
                     
-                    {/* Patient login/register - always show auth page if not logged in */}
+                    {/* Patient login/register */}
                     <Route path="/patient/login" element={
                         patientToken ? <Navigate to="/patient/dashboard" /> : <PatientAuth onLogin={handlePatientLogin} />
                     } />
                     
-                    {/* Patient booking - requires patient auth */}
+                    {/* Patient booking - public access */}
                     <Route path="/patient/book" element={
                         patientToken ? (
                             <PatientPortal 
@@ -174,7 +174,7 @@ function App() {
                                 patientName={patientName!}
                                 onLogout={handleLogout}
                             />
-                        ) : <Navigate to="/patient/login" />
+                        ) : <PatientPortal />
                     } />
                     
                     {/* Patient dashboard - requires patient auth */}
@@ -188,10 +188,8 @@ function App() {
                         ) : <Navigate to="/patient/login" />
                     } />
                     
-                    {/* Redirect /patient to dashboard if logged in, else to login */}
-                    <Route path="/patient" element={
-                        patientToken ? <Navigate to="/patient/dashboard" /> : <Navigate to="/patient/login" />
-                    } />
+                    {/* Redirect /patient to booking */}
+                    <Route path="/patient" element={<Navigate to="/patient/book" />} />
                     
                     {/* Staff login page */}
                     <Route path="/login" element={

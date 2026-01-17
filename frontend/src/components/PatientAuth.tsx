@@ -221,6 +221,43 @@ const PatientAuth: React.FC<PatientAuthProps> = ({ onLogin }) => {
                             </p>
                         </div>
 
+                        {/* Demo Login Button */}
+                        {mode === 'login' && (
+                            <div style={{ marginBottom: 'var(--space-4)' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => onLogin('demo-patient-token', 'patient1', 'Demo Patient')}
+                                    style={{
+                                        width: '100%',
+                                        padding: 'var(--space-3)',
+                                        background: 'linear-gradient(135deg, #0ea5e9, #06b6d4)',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: 'var(--radius-lg)',
+                                        fontSize: '0.9375rem',
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                        boxShadow: '0 4px 12px rgba(14, 165, 233, 0.3)'
+                                    }}
+                                >
+                                    Quick Demo Access
+                                </button>
+                                <div style={{ position: 'relative', margin: 'var(--space-4) 0' }}>
+                                    <div style={{ borderTop: '1px solid var(--gray-200)' }} />
+                                    <span style={{
+                                        position: 'absolute',
+                                        top: '-0.625rem',
+                                        left: '50%',
+                                        transform: 'translateX(-50%)',
+                                        background: 'white',
+                                        padding: '0 0.75rem',
+                                        fontSize: '0.75rem',
+                                        color: 'var(--gray-400)'
+                                    }}>OR</span>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Mode Toggle */}
                         <div style={{
                             display: 'flex',

@@ -752,8 +752,7 @@ const ReceptionistPortal: React.FC = () => {
                 .modal-overlay {
                     position: fixed;
                     inset: 0;
-                    background: rgba(15, 23, 42, 0.6);
-                    backdrop-filter: blur(4px);
+                    background: rgba(0, 0, 0, 0.5);
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -765,8 +764,7 @@ const ReceptionistPortal: React.FC = () => {
                     border-radius: var(--radius-xl);
                     width: 100%;
                     max-width: 480px;
-                    box-shadow: var(--shadow-2xl);
-                    border: 1px solid var(--gray-200);
+                    box-shadow: var(--shadow-xl);
                 }
                 .modal-header {
                     display: flex;

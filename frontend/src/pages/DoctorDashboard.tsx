@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getQueueStatus, updateSlotTime, getQueueTypes, transferToQueue, createMedicalReport, getReportsByDoctor } from '../utils/api';
+import { getQueueStatus, updateSlotTime } from '../utils/api';
 import { Socket } from 'socket.io-client';
 
 interface DoctorDashboardProps {
@@ -16,14 +16,6 @@ interface QueueItem {
     estimated_wait?: number;
 }
 
-interface QueueType {
-    id: number;
-    name: string;
-    description: string;
-    color: string;
-    icon: string;
-}
-
 interface MultiStageData {
     queue?: {
         registration: number;
@@ -32,59 +24,15 @@ interface MultiStageData {
     };
 }
 
-interface PrescriptionInput {
-    medicine_name: string;
-    dosage: string;
-    frequency: string;
-    duration: string;
-    instructions: string;
-}
-
-interface ReportFormData {
-    diagnosis: string;
-    symptoms: string;
-    notes: string;
-    vital_signs: {
-        bloodPressure: string;
-        heartRate: string;
-        temperature: string;
-        weight: string;
-        height: string;
-    };
-    lab_tests_ordered: string[];
-    prescriptions: PrescriptionInput[];
-}
-
 const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ socket }) => {
     const [queueStatus, setQueueStatus] = useState<QueueItem[]>([]);
-    const [queueTypes, setQueueTypes] = useState<QueueType[]>([]);
     const [multiStage, setMultiStage] = useState<MultiStageData>({});
     const [selectedPatient, setSelectedPatient] = useState('');
     const [actualDuration, setActualDuration] = useState('');
     const [selectedQueueId, setSelectedQueueId] = useState('');
     const [newStage, setNewStage] = useState('triage');
     const [showUpdateModal, setShowUpdateModal] = useState(false);
-    const [showTransferModal, setShowTransferModal] = useState(false);
-    const [transferPatient, setTransferPatient] = useState<QueueItem | null>(null);
-    const [selectedQueueType, setSelectedQueueType] = useState<number>(0);
-    const [transferNotes, setTransferNotes] = useState('');
     const [loading, setLoading] = useState(true);
-    
-    // Medical report state
-    const [showReportModal, setShowReportModal] = useState(false);
-    const [reportPatient, setReportPatient] = useState<QueueItem | null>(null);
-    const [reportForm, setReportForm] = useState<ReportFormData>({
-        diagnosis: '',
-        symptoms: '',
-        notes: '',
-        vital_signs: { bloodPressure: '', heartRate: '', temperature: '', weight: '', height: '' },
-        lab_tests_ordered: [],
-        prescriptions: []
-    });
-    const [newLabTest, setNewLabTest] = useState('');
-    const [savingReport, setSavingReport] = useState(false);
-    const [activeTab, setActiveTab] = useState<'queue' | 'reports'>('queue');
-    const [recentReports, setRecentReports] = useState<any[]>([]);
 
     const doctorId = localStorage.getItem('doctorId') || '1';
     const userName = localStorage.getItem('userName') || 'Doctor';
@@ -93,16 +41,12 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ socket }) => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const [status, multiRes, types, reports] = await Promise.all([
+                const [status, multiRes] = await Promise.all([
                     getQueueStatus(doctorId),
-                    fetch(`/api/multi-stage-status/${doctorId}`).then(r => r.json()),
-                    getQueueTypes(),
-                    getReportsByDoctor(parseInt(doctorId))
+                    fetch(`/api/multi-stage-status/${doctorId}`).then(r => r.json())
                 ]);
                 setQueueStatus(status);
                 setMultiStage(multiRes);
-                setQueueTypes(types);
-                setRecentReports(reports.slice(0, 10));
             } catch (error) {
                 console.error('Failed to fetch data:', error);
             } finally {
@@ -113,7 +57,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ socket }) => {
         fetchData();
 
         socket.on('queue-update', (data) => {
-            if (data.type === 'stage-advanced' || data.type === 'new-booking' || data.type === 'queue-transfer') {
+            if (data.type === 'stage-advanced' || data.type === 'new-booking') {
                 fetchData();
             }
         });
@@ -156,141 +100,6 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ socket }) => {
         });
         const status = await getQueueStatus(doctorId);
         setQueueStatus(status);
-    };
-
-    const openReportModal = (patient: QueueItem) => {
-        setReportPatient(patient);
-        setReportForm({
-            diagnosis: '',
-            symptoms: '',
-            notes: '',
-            vital_signs: { bloodPressure: '', heartRate: '', temperature: '', weight: '', height: '' },
-            lab_tests_ordered: [],
-            prescriptions: []
-        });
-        setShowReportModal(true);
-    };
-
-    const addPrescription = () => {
-        setReportForm(prev => ({
-            ...prev,
-            prescriptions: [...prev.prescriptions, {
-                medicine_name: '',
-                dosage: '',
-                frequency: '',
-                duration: '',
-                instructions: ''
-            }]
-        }));
-    };
-
-    const updatePrescription = (index: number, field: keyof PrescriptionInput, value: string) => {
-        setReportForm(prev => ({
-            ...prev,
-            prescriptions: prev.prescriptions.map((p, i) => 
-                i === index ? { ...p, [field]: value } : p
-            )
-        }));
-    };
-
-    const removePrescription = (index: number) => {
-        setReportForm(prev => ({
-            ...prev,
-            prescriptions: prev.prescriptions.filter((_, i) => i !== index)
-        }));
-    };
-
-    const addLabTest = () => {
-        if (newLabTest.trim()) {
-            setReportForm(prev => ({
-                ...prev,
-                lab_tests_ordered: [...prev.lab_tests_ordered, newLabTest.trim()]
-            }));
-            setNewLabTest('');
-        }
-    };
-
-    const removeLabTest = (index: number) => {
-        setReportForm(prev => ({
-            ...prev,
-            lab_tests_ordered: prev.lab_tests_ordered.filter((_, i) => i !== index)
-        }));
-    };
-
-    const handleSaveReport = async () => {
-        if (!reportPatient) return;
-        
-        setSavingReport(true);
-        try {
-            const reportData = {
-                patientId: parseInt(reportPatient.patient_id),
-                doctorId: parseInt(doctorId),
-                appointmentId: parseInt(reportPatient.id),
-                diagnosis: reportForm.diagnosis,
-                symptoms: reportForm.symptoms,
-                notes: reportForm.notes,
-                vitalSigns: {
-                    bloodPressure: reportForm.vital_signs.bloodPressure || undefined,
-                    heartRate: reportForm.vital_signs.heartRate ? parseInt(reportForm.vital_signs.heartRate) : undefined,
-                    temperature: reportForm.vital_signs.temperature ? parseFloat(reportForm.vital_signs.temperature) : undefined,
-                    weight: reportForm.vital_signs.weight ? parseFloat(reportForm.vital_signs.weight) : undefined,
-                    height: reportForm.vital_signs.height ? parseFloat(reportForm.vital_signs.height) : undefined
-                },
-                labTestsOrdered: reportForm.lab_tests_ordered,
-                prescriptions: reportForm.prescriptions
-                    .filter(p => p.medicine_name.trim())
-                    .map(p => ({
-                        medicineName: p.medicine_name,
-                        dosage: p.dosage || undefined,
-                        frequency: p.frequency || undefined,
-                        duration: p.duration || undefined,
-                        instructions: p.instructions || undefined
-                    }))
-            };
-
-            await createMedicalReport(reportData);
-            
-            // Complete the appointment after saving report
-            await handleCompletePatient(reportPatient.id);
-            
-            setShowReportModal(false);
-            setReportPatient(null);
-            
-            // Refresh reports
-            const reports = await getReportsByDoctor(parseInt(doctorId));
-            setRecentReports(reports.slice(0, 10));
-        } catch (error) {
-            console.error('Failed to save report:', error);
-            alert('Failed to save report. Please try again.');
-        } finally {
-            setSavingReport(false);
-        }
-    };
-
-    const handleTransferPatient = async () => {
-        if (!transferPatient || !selectedQueueType) return;
-        
-        try {
-            await transferToQueue(
-                parseInt(transferPatient.id),
-                selectedQueueType,
-                parseInt(doctorId),
-                transferNotes
-            );
-            
-            // Refresh queue status
-            const status = await getQueueStatus(doctorId);
-            setQueueStatus(status);
-            
-            // Reset modal state
-            setShowTransferModal(false);
-            setTransferPatient(null);
-            setSelectedQueueType(0);
-            setTransferNotes('');
-        } catch (error) {
-            console.error('Transfer failed:', error);
-            alert('Failed to transfer patient. Please try again.');
-        }
     };
 
     const getStageColor = (stage: string) => {
@@ -345,9 +154,9 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ socket }) => {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>
+            <div className="stats-grid" style={{ marginBottom: 'var(--space-8)' }}>
                 <div className="stat-card">
-                    <div className="stat-icon" style={{ background: 'var(--primary-100)', color: 'var(--primary-600)' }}>
+                    <div className="stat-icon" style={{ background: 'var(--primary-50)', color: 'var(--primary-600)' }}>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                             <circle cx="9" cy="7" r="4" />
@@ -387,7 +196,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ socket }) => {
                 </div>
 
                 <div className="stat-card">
-                    <div className="stat-icon" style={{ background: 'var(--accent-100)', color: 'var(--accent-700)' }}>
+                    <div className="stat-icon" style={{ background: 'var(--accent-50)', color: 'var(--accent-600)' }}>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                             <polyline points="14 2 14 8 20 8" />
@@ -491,37 +300,15 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ socket }) => {
                                                         </button>
                                                     )}
                                                     {patient.stage === 'consultation' && (
-                                                        <>
-                                                            <button 
-                                                                className="btn btn-sm btn-secondary"
-                                                                onClick={() => {
-                                                                    setTransferPatient(patient);
-                                                                    setShowTransferModal(true);
-                                                                }}
-                                                                title="Transfer to Lab/Pharmacy/Radiology"
-                                                            >
-                                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                                                                    <path d="m15 8 5-5" />
-                                                                    <path d="M17.5 2.5 21 6" />
-                                                                </svg>
-                                                                Transfer
-                                                            </button>
-                                                            <button 
-                                                                className="btn btn-sm btn-primary"
-                                                                onClick={() => openReportModal(patient)}
-                                                                title="Create medical report and complete"
-                                                            >
-                                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                                                    <polyline points="14 2 14 8 20 8"/>
-                                                                    <line x1="12" y1="18" x2="12" y2="12"/>
-                                                                    <line x1="9" y1="15" x2="15" y2="15"/>
-                                                                </svg>
-                                                                Report
-                                                            </button>
-                                                        </>
+                                                        <button 
+                                                            className="btn btn-sm btn-primary"
+                                                            onClick={() => handleCompletePatient(patient.id)}
+                                                        >
+                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                <polyline points="20 6 9 17 4 12" />
+                                                            </svg>
+                                                            Complete
+                                                        </button>
                                                     )}
                                                 </div>
                                             </td>
@@ -595,385 +382,20 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ socket }) => {
                 </div>
             )}
 
-            {/* Transfer to Queue Modal */}
-            {showTransferModal && transferPatient && (
-                <div className="modal-overlay" onClick={() => setShowTransferModal(false)}>
-                    <div className="modal slide-up" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h3 style={{ marginBottom: 0 }}>Transfer Patient to Queue</h3>
-                            <button className="modal-close" onClick={() => setShowTransferModal(false)}>
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <line x1="18" y1="6" x2="6" y2="18" />
-                                    <line x1="6" y1="6" x2="18" y2="18" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="flex items-center gap-3" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3)', background: 'var(--gray-50)', borderRadius: 'var(--radius-lg)' }}>
-                                <div style={{
-                                    width: '40px',
-                                    height: '40px',
-                                    borderRadius: 'var(--radius-full)',
-                                    background: 'var(--primary-100)',
-                                    color: 'var(--primary-600)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontWeight: 600
-                                }}>
-                                    {transferPatient.name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                                </div>
-                                <div>
-                                    <div className="font-medium">{transferPatient.name}</div>
-                                    <div className="text-muted" style={{ fontSize: '0.875rem' }}>Current: {transferPatient.stage}</div>
-                                </div>
-                            </div>
-                            
-                            <div className="form-group">
-                                <label className="form-label">Select Destination Queue</label>
-                                <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
-                                    {queueTypes.filter(q => q.name.toLowerCase() !== 'consultation').map((qType) => (
-                                        <label 
-                                            key={qType.id}
-                                            className={`queue-type-option ${selectedQueueType === qType.id ? 'selected' : ''}`}
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: 'var(--space-3)',
-                                                padding: 'var(--space-3) var(--space-4)',
-                                                border: `2px solid ${selectedQueueType === qType.id ? qType.color : 'var(--gray-200)'}`,
-                                                borderRadius: 'var(--radius-lg)',
-                                                cursor: 'pointer',
-                                                background: selectedQueueType === qType.id ? `${qType.color}10` : 'white',
-                                                transition: 'all 0.15s ease'
-                                            }}
-                                        >
-                                            <input
-                                                type="radio"
-                                                name="queueType"
-                                                value={qType.id}
-                                                checked={selectedQueueType === qType.id}
-                                                onChange={() => setSelectedQueueType(qType.id)}
-                                                style={{ display: 'none' }}
-                                            />
-                                            <div style={{
-                                                width: '36px',
-                                                height: '36px',
-                                                borderRadius: 'var(--radius-md)',
-                                                background: `${qType.color}20`,
-                                                color: qType.color,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                fontSize: '1.25rem'
-                                            }}>
-                                                {qType.icon}
-                                            </div>
-                                            <div>
-                                                <div className="font-medium">{qType.name}</div>
-                                                <div className="text-muted" style={{ fontSize: '0.75rem' }}>{qType.description}</div>
-                                            </div>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-                            
-                            <div className="form-group">
-                                <label className="form-label">Notes (Optional)</label>
-                                <textarea
-                                    className="form-input"
-                                    placeholder="e.g., Please run CBC and lipid profile..."
-                                    value={transferNotes}
-                                    onChange={(e) => setTransferNotes(e.target.value)}
-                                    rows={3}
-                                    style={{ resize: 'none' }}
-                                />
-                            </div>
-                        </div>
-                        <div className="modal-footer">
-                            <button className="btn btn-ghost" onClick={() => {
-                                setShowTransferModal(false);
-                                setTransferPatient(null);
-                                setSelectedQueueType(0);
-                                setTransferNotes('');
-                            }}>
-                                Cancel
-                            </button>
-                            <button 
-                                className="btn btn-primary" 
-                                onClick={handleTransferPatient}
-                                disabled={!selectedQueueType}
-                            >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M5 12h14" />
-                                    <path d="m12 5 7 7-7 7" />
-                                </svg>
-                                Transfer Patient
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Medical Report Modal */}
-            {showReportModal && reportPatient && (
-                <div className="modal-overlay" onClick={() => setShowReportModal(false)}>
-                    <div className="modal modal-lg slide-up" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <div>
-                                <h3 style={{ marginBottom: 'var(--space-1)' }}>Create Medical Report</h3>
-                                <p className="text-muted" style={{ fontSize: '0.875rem', marginBottom: 0 }}>
-                                    Patient: <strong>{reportPatient.name}</strong>
-                                </p>
-                            </div>
-                            <button className="modal-close" onClick={() => setShowReportModal(false)}>
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <line x1="18" y1="6" x2="6" y2="18" />
-                                    <line x1="6" y1="6" x2="18" y2="18" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-                            {/* Diagnosis & Symptoms */}
-                            <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
-                                <div className="form-group">
-                                    <label className="form-label">Diagnosis *</label>
-                                    <input
-                                        type="text"
-                                        className="form-input"
-                                        placeholder="e.g., Viral fever, Hypertension"
-                                        value={reportForm.diagnosis}
-                                        onChange={(e) => setReportForm(prev => ({ ...prev, diagnosis: e.target.value }))}
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label className="form-label">Symptoms</label>
-                                    <input
-                                        type="text"
-                                        className="form-input"
-                                        placeholder="e.g., Fever, headache, body ache"
-                                        value={reportForm.symptoms}
-                                        onChange={(e) => setReportForm(prev => ({ ...prev, symptoms: e.target.value }))}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Vital Signs */}
-                            <div style={{ marginBottom: 'var(--space-4)' }}>
-                                <label className="form-label">Vital Signs</label>
-                                <div className="grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)', gap: 'var(--space-2)' }}>
-                                    <input
-                                        type="text"
-                                        className="form-input"
-                                        placeholder="BP (120/80)"
-                                        value={reportForm.vital_signs.bloodPressure}
-                                        onChange={(e) => setReportForm(prev => ({
-                                            ...prev,
-                                            vital_signs: { ...prev.vital_signs, bloodPressure: e.target.value }
-                                        }))}
-                                    />
-                                    <input
-                                        type="number"
-                                        className="form-input"
-                                        placeholder="HR (bpm)"
-                                        value={reportForm.vital_signs.heartRate}
-                                        onChange={(e) => setReportForm(prev => ({
-                                            ...prev,
-                                            vital_signs: { ...prev.vital_signs, heartRate: e.target.value }
-                                        }))}
-                                    />
-                                    <input
-                                        type="number"
-                                        step="0.1"
-                                        className="form-input"
-                                        placeholder="Temp (°F)"
-                                        value={reportForm.vital_signs.temperature}
-                                        onChange={(e) => setReportForm(prev => ({
-                                            ...prev,
-                                            vital_signs: { ...prev.vital_signs, temperature: e.target.value }
-                                        }))}
-                                    />
-                                    <input
-                                        type="number"
-                                        step="0.1"
-                                        className="form-input"
-                                        placeholder="Wt (kg)"
-                                        value={reportForm.vital_signs.weight}
-                                        onChange={(e) => setReportForm(prev => ({
-                                            ...prev,
-                                            vital_signs: { ...prev.vital_signs, weight: e.target.value }
-                                        }))}
-                                    />
-                                    <input
-                                        type="number"
-                                        step="0.1"
-                                        className="form-input"
-                                        placeholder="Ht (cm)"
-                                        value={reportForm.vital_signs.height}
-                                        onChange={(e) => setReportForm(prev => ({
-                                            ...prev,
-                                            vital_signs: { ...prev.vital_signs, height: e.target.value }
-                                        }))}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Lab Tests */}
-                            <div style={{ marginBottom: 'var(--space-4)' }}>
-                                <label className="form-label">Lab Tests Ordered</label>
-                                <div className="flex gap-2" style={{ marginBottom: 'var(--space-2)' }}>
-                                    <input
-                                        type="text"
-                                        className="form-input"
-                                        placeholder="e.g., CBC, Lipid Profile"
-                                        value={newLabTest}
-                                        onChange={(e) => setNewLabTest(e.target.value)}
-                                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addLabTest())}
-                                    />
-                                    <button type="button" className="btn btn-outline" onClick={addLabTest}>Add</button>
-                                </div>
-                                {reportForm.lab_tests_ordered.length > 0 && (
-                                    <div className="flex gap-2" style={{ flexWrap: 'wrap' }}>
-                                        {reportForm.lab_tests_ordered.map((test, i) => (
-                                            <span key={i} className="tag">
-                                                {test}
-                                                <button type="button" className="tag-remove" onClick={() => removeLabTest(i)}>
-                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                        <line x1="18" y1="6" x2="6" y2="18"/>
-                                                        <line x1="6" y1="6" x2="18" y2="18"/>
-                                                    </svg>
-                                                </button>
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Notes */}
-                            <div className="form-group">
-                                <label className="form-label">Clinical Notes</label>
-                                <textarea
-                                    className="form-input"
-                                    placeholder="Additional notes about the consultation..."
-                                    rows={2}
-                                    value={reportForm.notes}
-                                    onChange={(e) => setReportForm(prev => ({ ...prev, notes: e.target.value }))}
-                                    style={{ resize: 'none' }}
-                                />
-                            </div>
-
-                            {/* Prescriptions */}
-                            <div>
-                                <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
-                                    <label className="form-label" style={{ marginBottom: 0 }}>Prescriptions</label>
-                                    <button type="button" className="btn btn-sm btn-outline" onClick={addPrescription}>
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <line x1="12" y1="5" x2="12" y2="19"/>
-                                            <line x1="5" y1="12" x2="19" y2="12"/>
-                                        </svg>
-                                        Add Medicine
-                                    </button>
-                                </div>
-                                
-                                {reportForm.prescriptions.length === 0 ? (
-                                    <div className="text-muted" style={{ textAlign: 'center', padding: 'var(--space-4)', background: 'var(--gray-50)', borderRadius: 'var(--radius-lg)' }}>
-                                        No prescriptions added yet
-                                    </div>
-                                ) : (
-                                    reportForm.prescriptions.map((rx, index) => (
-                                        <div key={index} className="prescription-card">
-                                            <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
-                                                <span className="font-medium" style={{ fontSize: '0.875rem' }}>Medicine #{index + 1}</span>
-                                                <button 
-                                                    type="button" 
-                                                    className="btn btn-ghost btn-sm"
-                                                    onClick={() => removePrescription(index)}
-                                                    style={{ color: 'var(--error-500)' }}
-                                                >
-                                                    Remove
-                                                </button>
-                                            </div>
-                                            <div className="grid" style={{ gridTemplateColumns: '2fr 1fr 1fr', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
-                                                <input
-                                                    type="text"
-                                                    className="form-input"
-                                                    placeholder="Medicine name *"
-                                                    value={rx.medicine_name}
-                                                    onChange={(e) => updatePrescription(index, 'medicine_name', e.target.value)}
-                                                />
-                                                <input
-                                                    type="text"
-                                                    className="form-input"
-                                                    placeholder="Dosage (500mg)"
-                                                    value={rx.dosage}
-                                                    onChange={(e) => updatePrescription(index, 'dosage', e.target.value)}
-                                                />
-                                                <input
-                                                    type="text"
-                                                    className="form-input"
-                                                    placeholder="Duration (7 days)"
-                                                    value={rx.duration}
-                                                    onChange={(e) => updatePrescription(index, 'duration', e.target.value)}
-                                                />
-                                            </div>
-                                            <div className="grid" style={{ gridTemplateColumns: '1fr 2fr', gap: 'var(--space-2)' }}>
-                                                <input
-                                                    type="text"
-                                                    className="form-input"
-                                                    placeholder="Frequency (2x daily)"
-                                                    value={rx.frequency}
-                                                    onChange={(e) => updatePrescription(index, 'frequency', e.target.value)}
-                                                />
-                                                <input
-                                                    type="text"
-                                                    className="form-input"
-                                                    placeholder="Instructions (after meals)"
-                                                    value={rx.instructions}
-                                                    onChange={(e) => updatePrescription(index, 'instructions', e.target.value)}
-                                                />
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </div>
-                        <div className="modal-footer">
-                            <button className="btn btn-ghost" onClick={() => setShowReportModal(false)}>
-                                Cancel
-                            </button>
-                            <button 
-                                className="btn btn-primary" 
-                                onClick={handleSaveReport}
-                                disabled={!reportForm.diagnosis.trim() || savingReport}
-                            >
-                                {savingReport ? (
-                                    <>
-                                        <span className="spinner-sm"></span>
-                                        Saving...
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <polyline points="20 6 9 17 4 12"/>
-                                        </svg>
-                                        Save & Complete
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             <style>{`
+                .stats-grid {
+                    display: grid;
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: var(--space-4);
+                }
                 @media (max-width: 1024px) {
-                    .grid[style*="repeat(4"] {
-                        grid-template-columns: repeat(2, 1fr) !important;
+                    .stats-grid {
+                        grid-template-columns: repeat(2, 1fr);
                     }
                 }
                 @media (max-width: 600px) {
-                    .grid[style*="repeat(4"], .grid[style*="repeat(2"] {
-                        grid-template-columns: 1fr !important;
+                    .stats-grid {
+                        grid-template-columns: 1fr;
                     }
                 }
                 .stage-pill {
@@ -986,8 +408,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ socket }) => {
                 .modal-overlay {
                     position: fixed;
                     inset: 0;
-                    background: rgba(15, 23, 42, 0.6);
-                    backdrop-filter: blur(4px);
+                    background: rgba(0, 0, 0, 0.5);
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -999,13 +420,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ socket }) => {
                     border-radius: var(--radius-xl);
                     width: 100%;
                     max-width: 480px;
-                    box-shadow: var(--shadow-2xl);
-                    border: 1px solid var(--gray-200);
-                }
-                .modal-lg {
-                    max-width: 720px;
-                    max-height: 90vh;
-                    overflow-y: auto;
+                    box-shadow: var(--shadow-xl);
                 }
                 .modal-header {
                     display: flex;
@@ -1038,31 +453,6 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ socket }) => {
                     border-top: 1px solid var(--gray-100);
                     background: var(--gray-50);
                     border-radius: 0 0 var(--radius-xl) var(--radius-xl);
-                }
-                .prescription-card {
-                    border: 1px solid var(--gray-200);
-                    border-radius: var(--radius-lg);
-                    padding: var(--space-4);
-                    background: var(--gray-50);
-                    margin-bottom: var(--space-3);
-                }
-                .tag {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: var(--space-1);
-                    padding: var(--space-1) var(--space-2);
-                    background: var(--primary-100);
-                    color: var(--primary-700);
-                    border-radius: var(--radius-md);
-                    font-size: 0.75rem;
-                }
-                .tag-remove {
-                    background: none;
-                    border: none;
-                    cursor: pointer;
-                    color: inherit;
-                    padding: 0;
-                    display: flex;
                 }
             `}</style>
         </div>
