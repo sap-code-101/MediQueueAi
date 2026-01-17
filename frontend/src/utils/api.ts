@@ -181,6 +181,14 @@ export const bookSlot = async (doctorId: string, patientData: {
     return response.data;
 };
 
+// Book appointment for authenticated patient
+export const bookAppointmentForPatient = async (doctorId: string, data: {
+    slotTime: string;
+}) => {
+    const response = await api.post('/patient/book', { doctorId, slotTime: data.slotTime });
+    return response.data;
+};
+
 export const checkSlotAndPredict = async (doctorId: string, slotTime: string) => {
     const response = await api.post(`/check-slot-predict/${doctorId}`, { slotTime });
     return response.data;

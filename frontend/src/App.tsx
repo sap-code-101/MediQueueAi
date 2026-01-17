@@ -160,12 +160,21 @@ function App() {
                     {/* Landing page */}
                     <Route path="/" element={<Home />} />
                     
-                    {/* Public patient booking portal - no authentication needed */}
-                    <Route path="/patient" element={<PatientPortal />} />
-                    
-                    {/* Patient login/register */}
+                    {/* Patient login/register - always show auth page if not logged in */}
                     <Route path="/patient/login" element={
                         patientToken ? <Navigate to="/patient/dashboard" /> : <PatientAuth onLogin={handlePatientLogin} />
+                    } />
+                    
+                    {/* Patient booking - requires patient auth */}
+                    <Route path="/patient/book" element={
+                        patientToken ? (
+                            <PatientPortal 
+                                isAuthenticated={true}
+                                patientId={patientId!}
+                                patientName={patientName!}
+                                onLogout={handleLogout}
+                            />
+                        ) : <Navigate to="/patient/login" />
                     } />
                     
                     {/* Patient dashboard - requires patient auth */}
@@ -177,6 +186,11 @@ function App() {
                                 onLogout={handleLogout} 
                             />
                         ) : <Navigate to="/patient/login" />
+                    } />
+                    
+                    {/* Redirect /patient to dashboard if logged in, else to login */}
+                    <Route path="/patient" element={
+                        patientToken ? <Navigate to="/patient/dashboard" /> : <Navigate to="/patient/login" />
                     } />
                     
                     {/* Staff login page */}

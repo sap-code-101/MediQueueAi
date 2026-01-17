@@ -89,40 +89,56 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             position: 'relative',
             overflow: 'hidden'
           }}>
-            {/* Top gradient bar */}
+            {/* Top gradient bar - INDIGO/PURPLE for Staff */}
             <div style={{
               position: 'absolute',
               top: 0,
               left: 0,
               right: 0,
-              height: '4px',
-              background: 'linear-gradient(to right, #3b82f6, #8b5cf6, #10b981)'
+              height: '5px',
+              background: 'linear-gradient(to right, #6366f1, #8b5cf6, #a855f7)'
             }} />
+
+            {/* Badge */}
+            <div style={{
+              position: 'absolute',
+              top: '1.5rem',
+              right: '1.5rem',
+              padding: '0.375rem 0.75rem',
+              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              borderRadius: '0.5rem',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              color: 'white',
+              letterSpacing: '0.025em'
+            }}>
+              STAFF
+            </div>
 
             {/* Logo & Header */}
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
               <div style={{
-                width: '64px',
-                height: '64px',
-                background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-                borderRadius: '1rem',
+                width: '72px',
+                height: '72px',
+                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                borderRadius: '1.25rem',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 margin: '0 auto 1.5rem',
-                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                boxShadow: '0 8px 16px rgba(99, 102, 241, 0.4)',
+                border: '3px solid rgba(139, 92, 207, 0.2)'
               }}>
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                  <path d="M19 21v-2a4 4 0 00-4-4H9a4 4 0 00-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 </svg>
               </div>
               
-              <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem' }}>
+              <h1 style={{ fontSize: '1.875rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem' }}>
                 Staff Portal
               </h1>
-              <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>
-                Sign in to access MediQueueAI
+              <p style={{ color: '#64748b', fontSize: '0.9375rem', fontWeight: 500 }}>
+                Healthcare Professional Access • MediQueueAI
               </p>
             </div>
 
@@ -249,7 +265,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   color: 'white',
                   background: loading 
                     ? '#94a3b8' 
-                    : 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                    : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
                   border: 'none',
                   borderRadius: '0.75rem',
                   cursor: loading ? 'not-allowed' : 'pointer',
@@ -258,7 +274,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   justifyContent: 'center',
                   gap: '0.5rem',
                   transition: 'all 0.2s',
-                  boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                  boxShadow: loading ? 'none' : '0 8px 16px rgba(99, 102, 241, 0.4)'
                 }}
               >
                 {loading ? (
@@ -275,7 +291,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   </>
                 ) : (
                   <>
-                    Sign In
+                    Sign In as Staff
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M5 12h14M12 5l7 7-7 7"/>
                     </svg>

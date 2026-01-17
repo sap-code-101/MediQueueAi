@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import BookingForm from '../components/BookingForm';
 import { fetchAvailableDoctors, lookupAppointment, checkInWithCode, cancelAppointment } from '../utils/api';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 interface Doctor {
     id: string;
@@ -22,7 +22,20 @@ interface Appointment {
     check_in_time?: string;
 }
 
-const PatientPortal: React.FC = () => {
+interface PatientPortalProps {
+    isAuthenticated?: boolean;
+    patientId?: string;
+    patientName?: string;
+    onLogout?: () => void;
+}
+
+const PatientPortal: React.FC<PatientPortalProps> = ({ 
+    isAuthenticated = false, 
+    patientId, 
+    patientName,
+    onLogout 
+}) => {
+    const navigate = useNavigate();
     const [doctors, setDoctors] = useState<Doctor[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
@@ -124,9 +137,41 @@ const PatientPortal: React.FC = () => {
                             </div>
                             MediQueue<span style={{background: 'linear-gradient(to right, #8b5cf6, #d946ef)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>AI</span>
                         </Link>
-                        <Link to="/login" className="btn btn-white btn-sm">
-                            Staff Login
-                        </Link>
+                        {isAuthenticated ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+                                <Link to="/patient/dashboard" className="btn btn-white btn-sm">
+                                    My Dashboard
+                                </Link>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                                    <div style={{
+                                        width: '36px',
+                                        height: '36px',
+                                        borderRadius: 'var(--radius-full)',
+                                        background: 'rgba(255,255,255,0.2)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: 'white',
+                                        fontWeight: 600,
+                                        fontSize: '0.875rem'
+                                    }}>
+                                        {patientName?.charAt(0).toUpperCase()}
+                                    </div>
+                                    <span style={{ color: 'white', fontWeight: 500, fontSize: '0.875rem' }}>{patientName}</span>
+                                </div>
+                                <button onClick={onLogout} className="btn btn-ghost btn-sm" style={{ color: 'white' }}>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                        <polyline points="16 17 21 12 16 7" />
+                                        <line x1="21" y1="12" x2="9" y2="12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        ) : (
+                            <Link to="/login" className="btn btn-white btn-sm">
+                                Staff Login
+                            </Link>
+                        )}
                     </div>
                 </div>
             </header>
@@ -442,6 +487,10 @@ const PatientPortal: React.FC = () => {
                             <BookingForm 
                                 doctor={selectedDoctor}
                                 onComplete={() => setStep(3)}
+                                isAuthenticated={isAuthenticated}
+                                patientId={patientId}
+                                patientName={patientName}
+                                onBookingComplete={() => navigate('/patient/dashboard')}
                             />
                         )}
                     </div>

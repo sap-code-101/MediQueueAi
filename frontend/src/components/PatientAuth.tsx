@@ -17,18 +17,13 @@ const PatientAuth: React.FC<PatientAuthProps> = ({ onLogin }) => {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     
-    // Register form
+    // Register form - simplified
     const [registerData, setRegisterData] = useState({
         name: '',
         email: '',
         phone: '',
         password: '',
-        confirmPassword: '',
-        age: '',
-        gender: '',
-        address: '',
-        bloodGroup: '',
-        emergencyContact: ''
+        confirmPassword: ''
     });
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -58,8 +53,8 @@ const PatientAuth: React.FC<PatientAuthProps> = ({ onLogin }) => {
         e.preventDefault();
         
         // Validation
-        if (!registerData.name || !registerData.email || !registerData.phone || !registerData.password) {
-            setError('Name, email, phone, and password are required');
+        if (!registerData.name || !registerData.email || !registerData.password) {
+            setError('Name, email, and password are required');
             return;
         }
         
@@ -80,13 +75,8 @@ const PatientAuth: React.FC<PatientAuthProps> = ({ onLogin }) => {
             const res = await api.post('/patient/register', {
                 name: registerData.name,
                 email: registerData.email,
-                phone: registerData.phone,
-                password: registerData.password,
-                age: registerData.age ? parseInt(registerData.age) : undefined,
-                gender: registerData.gender || undefined,
-                address: registerData.address || undefined,
-                bloodGroup: registerData.bloodGroup || undefined,
-                emergencyContact: registerData.emergencyContact || undefined
+                phone: registerData.phone || '',
+                password: registerData.password
             });
             
             localStorage.setItem('patientToken', res.data.token);
@@ -176,37 +166,53 @@ const PatientAuth: React.FC<PatientAuthProps> = ({ onLogin }) => {
                         position: 'relative',
                         overflow: 'hidden'
                     }}>
-                        {/* Top gradient bar */}
+                        {/* Top gradient bar - SKY BLUE for Patient */}
                         <div style={{
                             position: 'absolute',
                             top: 0,
                             left: 0,
                             right: 0,
-                            height: '4px',
-                            background: 'linear-gradient(to right, var(--primary-500), var(--accent-500))'
+                            height: '5px',
+                            background: 'linear-gradient(to right, #0ea5e9, #06b6d4, #14b8a6)'
                         }} />
+
+                        {/* Badge */}
+                        <div style={{
+                            position: 'absolute',
+                            top: '1.5rem',
+                            right: '1.5rem',
+                            padding: '0.375rem 0.75rem',
+                            background: 'linear-gradient(135deg, #0ea5e9, #06b6d4)',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            color: 'white',
+                            letterSpacing: '0.025em'
+                        }}>
+                            PATIENT
+                        </div>
 
                         {/* Logo & Header */}
                         <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
                             <div style={{
-                                width: '64px',
-                                height: '64px',
-                                background: 'linear-gradient(135deg, var(--primary-500), var(--accent-500))',
-                                borderRadius: 'var(--radius-xl)',
+                                width: '72px',
+                                height: '72px',
+                                background: 'linear-gradient(135deg, #0ea5e9, #06b6d4)',
+                                borderRadius: '1.25rem',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 margin: '0 auto var(--space-4)',
-                                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                boxShadow: '0 8px 16px rgba(14, 165, 233, 0.4)',
+                                border: '3px solid rgba(6, 182, 212, 0.2)'
                             }}>
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-                                    <circle cx="12" cy="7" r="4" />
+                                <svg width="36" height="36" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2">
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                                 </svg>
                             </div>
                             
-                            <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--gray-900)', marginBottom: 'var(--space-2)' }}>
-                                {mode === 'login' ? 'Patient Portal' : 'Create Account'}
+                            <h1 style={{ fontSize: '1.875rem', fontWeight: 800, color: 'var(--gray-900)', marginBottom: 'var(--space-2)' }}>
+                                {mode === 'login' ? 'Patient Portal' : 'Create Patient Account'}
                             </h1>
                             <p style={{ color: 'var(--gray-500)', fontSize: '0.9375rem' }}>
                                 {mode === 'login' 
@@ -329,155 +335,106 @@ const PatientAuth: React.FC<PatientAuthProps> = ({ onLogin }) => {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="btn btn-primary"
-                                    style={{ width: '100%', padding: 'var(--space-4)', fontSize: '1rem' }}
+                                    style={{
+                                        width: '100%',
+                                        padding: 'var(--space-4)',
+                                        fontSize: '1rem',
+                                        fontWeight: 600,
+                                        color: 'white',
+                                        background: loading ? 'var(--gray-400)' : 'linear-gradient(135deg, #0ea5e9, #06b6d4)',
+                                        border: 'none',
+                                        borderRadius: 'var(--radius-lg)',
+                                        cursor: loading ? 'not-allowed' : 'pointer',
+                                        transition: 'all 0.2s',
+                                        boxShadow: loading ? 'none' : '0 8px 16px rgba(14, 165, 233, 0.4)'
+                                    }}
                                 >
-                                    {loading ? 'Signing in...' : 'Sign In'}
+                                    {loading ? 'Signing in...' : 'Sign In as Patient'}
                                 </button>
                             </form>
                         )}
 
-                        {/* Register Form */}
+                        {/* Register Form - Simplified */}
                         {mode === 'register' && (
                             <form onSubmit={handleRegister}>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
-                                    <div style={{ gridColumn: '1 / -1' }}>
-                                        <label style={labelStyle}>Full Name *</label>
-                                        <input
-                                            type="text"
-                                            value={registerData.name}
-                                            onChange={(e) => setRegisterData({...registerData, name: e.target.value})}
-                                            placeholder="John Doe"
-                                            style={inputStyle}
-                                            required
-                                        />
-                                    </div>
+                                <div style={{ marginBottom: 'var(--space-4)' }}>
+                                    <label style={labelStyle}>Full Name *</label>
+                                    <input
+                                        type="text"
+                                        value={registerData.name}
+                                        onChange={(e) => setRegisterData({...registerData, name: e.target.value})}
+                                        placeholder="John Doe"
+                                        style={inputStyle}
+                                        required
+                                    />
+                                </div>
 
-                                    <div style={{ gridColumn: '1 / -1' }}>
-                                        <label style={labelStyle}>Email Address *</label>
-                                        <input
-                                            type="email"
-                                            value={registerData.email}
-                                            onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
-                                            placeholder="you@example.com"
-                                            style={inputStyle}
-                                            required
-                                        />
-                                    </div>
+                                <div style={{ marginBottom: 'var(--space-4)' }}>
+                                    <label style={labelStyle}>Email Address *</label>
+                                    <input
+                                        type="email"
+                                        value={registerData.email}
+                                        onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
+                                        placeholder="you@example.com"
+                                        style={inputStyle}
+                                        required
+                                    />
+                                </div>
 
-                                    <div>
-                                        <label style={labelStyle}>Phone Number *</label>
-                                        <input
-                                            type="tel"
-                                            value={registerData.phone}
-                                            onChange={(e) => setRegisterData({...registerData, phone: e.target.value})}
-                                            placeholder="+1 234 567 890"
-                                            style={inputStyle}
-                                            required
-                                        />
-                                    </div>
+                                <div style={{ marginBottom: 'var(--space-4)' }}>
+                                    <label style={labelStyle}>Phone Number (Optional)</label>
+                                    <input
+                                        type="tel"
+                                        value={registerData.phone}
+                                        onChange={(e) => setRegisterData({...registerData, phone: e.target.value})}
+                                        placeholder="+1 234 567 890"
+                                        style={inputStyle}
+                                    />
+                                </div>
 
-                                    <div>
-                                        <label style={labelStyle}>Age</label>
-                                        <input
-                                            type="number"
-                                            value={registerData.age}
-                                            onChange={(e) => setRegisterData({...registerData, age: e.target.value})}
-                                            placeholder="25"
-                                            style={inputStyle}
-                                            min="1"
-                                            max="120"
-                                        />
-                                    </div>
+                                <div style={{ marginBottom: 'var(--space-4)' }}>
+                                    <label style={labelStyle}>Password *</label>
+                                    <input
+                                        type="password"
+                                        value={registerData.password}
+                                        onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
+                                        placeholder="Min 6 characters"
+                                        style={inputStyle}
+                                        required
+                                        minLength={6}
+                                    />
+                                </div>
 
-                                    <div>
-                                        <label style={labelStyle}>Gender</label>
-                                        <select
-                                            value={registerData.gender}
-                                            onChange={(e) => setRegisterData({...registerData, gender: e.target.value})}
-                                            style={inputStyle}
-                                        >
-                                            <option value="">Select</option>
-                                            <option value="male">Male</option>
-                                            <option value="female">Female</option>
-                                            <option value="other">Other</option>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label style={labelStyle}>Blood Group</label>
-                                        <select
-                                            value={registerData.bloodGroup}
-                                            onChange={(e) => setRegisterData({...registerData, bloodGroup: e.target.value})}
-                                            style={inputStyle}
-                                        >
-                                            <option value="">Select</option>
-                                            <option value="A+">A+</option>
-                                            <option value="A-">A-</option>
-                                            <option value="B+">B+</option>
-                                            <option value="B-">B-</option>
-                                            <option value="AB+">AB+</option>
-                                            <option value="AB-">AB-</option>
-                                            <option value="O+">O+</option>
-                                            <option value="O-">O-</option>
-                                        </select>
-                                    </div>
-
-                                    <div style={{ gridColumn: '1 / -1' }}>
-                                        <label style={labelStyle}>Address</label>
-                                        <input
-                                            type="text"
-                                            value={registerData.address}
-                                            onChange={(e) => setRegisterData({...registerData, address: e.target.value})}
-                                            placeholder="123 Main St, City"
-                                            style={inputStyle}
-                                        />
-                                    </div>
-
-                                    <div style={{ gridColumn: '1 / -1' }}>
-                                        <label style={labelStyle}>Emergency Contact</label>
-                                        <input
-                                            type="tel"
-                                            value={registerData.emergencyContact}
-                                            onChange={(e) => setRegisterData({...registerData, emergencyContact: e.target.value})}
-                                            placeholder="+1 234 567 890"
-                                            style={inputStyle}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label style={labelStyle}>Password *</label>
-                                        <input
-                                            type="password"
-                                            value={registerData.password}
-                                            onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
-                                            placeholder="Min 6 characters"
-                                            style={inputStyle}
-                                            required
-                                            minLength={6}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label style={labelStyle}>Confirm Password *</label>
-                                        <input
-                                            type="password"
-                                            value={registerData.confirmPassword}
-                                            onChange={(e) => setRegisterData({...registerData, confirmPassword: e.target.value})}
-                                            placeholder="Repeat password"
-                                            style={inputStyle}
-                                            required
-                                        />
-                                    </div>
+                                <div style={{ marginBottom: 'var(--space-6)' }}>
+                                    <label style={labelStyle}>Confirm Password *</label>
+                                    <input
+                                        type="password"
+                                        value={registerData.confirmPassword}
+                                        onChange={(e) => setRegisterData({...registerData, confirmPassword: e.target.value})}
+                                        placeholder="Repeat password"
+                                        style={inputStyle}
+                                        required
+                                    />
                                 </div>
 
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="btn btn-primary"
-                                    style={{ width: '100%', padding: 'var(--space-4)', fontSize: '1rem', marginTop: 'var(--space-6)' }}
+                                    style={{
+                                        width: '100%',
+                                        padding: 'var(--space-4)',
+                                        fontSize: '1rem',
+                                        fontWeight: 600,
+                                        color: 'white',
+                                        background: loading ? 'var(--gray-400)' : 'linear-gradient(135deg, #0ea5e9, #06b6d4)',
+                                        border: 'none',
+                                        borderRadius: 'var(--radius-lg)',
+                                        cursor: loading ? 'not-allowed' : 'pointer',
+                                        transition: 'all 0.2s',
+                                        boxShadow: loading ? 'none' : '0 8px 16px rgba(14, 165, 233, 0.4)'
+                                    }}
                                 >
-                                    {loading ? 'Creating Account...' : 'Create Account'}
+                                    {loading ? 'Creating Account...' : 'Create Patient Account'}
                                 </button>
                             </form>
                         )}

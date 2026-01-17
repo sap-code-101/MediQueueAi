@@ -300,14 +300,8 @@ const seedQueueTypes = async () => {
 const seedDefaultAdmin = async () => {
     const existingAdmin = await db.get('SELECT id FROM users WHERE role = "admin" LIMIT 1');
     if (!existingAdmin) {
-        if (!LICENSE_KEY) {
-            console.error('⚠️  WARNING: No LICENSE_KEY provided!');
-            console.error('   Set LICENSE_KEY environment variable with your purchased license.');
-            console.error('   Example: LICENSE_KEY=MQAI-XXXX-XXXX-XXXX docker compose up');
-            console.error('   Using demo key for testing: MQAI-DEMO-TEST-2024');
-        }
-        
-        const adminPassword = LICENSE_KEY || 'MQAI-DEMO-TEST-2024';
+        // Use simple default password for hackathon demo
+        const adminPassword = 'admin123';
         console.log('Creating admin account...');
         const hash = await bcrypt.hash(adminPassword, 10);
         
@@ -322,12 +316,12 @@ const seedDefaultAdmin = async () => {
         
         await db.run(
             'INSERT OR IGNORE INTO license (license_key, hospital_name, expires_at, status) VALUES (?, ?, ?, ?)',
-            [adminPassword, LICENSE_KEY ? 'Licensed Hospital' : 'Demo Installation', expiresAt.toISOString(), LICENSE_KEY ? 'active' : 'demo']
+            [LICENSE_KEY || 'DEMO', LICENSE_KEY ? 'Licensed Hospital' : 'Demo Installation', expiresAt.toISOString(), LICENSE_KEY ? 'active' : 'demo']
         );
         
         console.log('✅ Admin account created');
         console.log(`   Username: admin`);
-        console.log(`   Password: ${LICENSE_KEY ? '<your-license-key>' : 'MQAI-DEMO-TEST-2024'}`);
+        console.log(`   Password: admin123`);
     }
 };
 
@@ -392,14 +386,22 @@ export const bookSlot = async (doctorId: string, patientData: {
     patientName: string, 
     patientEmail?: string,
     patientPhone?: string,
-    slotTime: Date 
+    slotTime: Date,
+    patientId?: number  // Optional: link to existing patient account
 }) => {
-    // Create patient record with contact info
-    const patientRes = await run(
-        'INSERT INTO patients (name, email, phone) VALUES (?, ?, ?)', 
-        [patientData.patientName, patientData.patientEmail || null, patientData.patientPhone || null]
-    );
-    const patientId = patientRes.lastID;
+    let patientId: number;
+    
+    if (patientData.patientId) {
+        // Use existing patient ID (for authenticated patients)
+        patientId = patientData.patientId;
+    } else {
+        // Create patient record with contact info (for guest bookings)
+        const patientRes = await run(
+            'INSERT INTO patients (name, email, phone) VALUES (?, ?, ?)', 
+            [patientData.patientName, patientData.patientEmail || null, patientData.patientPhone || null]
+        );
+        patientId = patientRes.lastID!;
+    }
     
     // Generate unique confirmation code
     const confirmationCode = generateConfirmationCode();

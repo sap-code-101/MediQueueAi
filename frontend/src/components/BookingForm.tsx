@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getAvailableSlots, checkSlotAndPredict, bookSlot } from '../utils/api';
+import { getAvailableSlots, checkSlotAndPredict, bookSlot, bookAppointmentForPatient } from '../utils/api';
 
 interface Doctor {
     id: string;
@@ -10,6 +10,10 @@ interface Doctor {
 interface BookingFormProps {
     doctor: Doctor;
     onComplete?: () => void;
+    isAuthenticated?: boolean;
+    patientId?: string;
+    patientName?: string;
+    onBookingComplete?: () => void;
 }
 
 interface Prediction {
@@ -23,11 +27,18 @@ interface Prediction {
     tail_risk: number;
 }
 
-const BookingForm: React.FC<BookingFormProps> = ({ doctor, onComplete }) => {
+const BookingForm: React.FC<BookingFormProps> = ({ 
+    doctor, 
+    onComplete, 
+    isAuthenticated = false,
+    patientId,
+    patientName: authPatientName,
+    onBookingComplete
+}) => {
     const [availableSlots, setAvailableSlots] = useState<string[]>([]);
     const [selectedSlot, setSelectedSlot] = useState('');
     const [prediction, setPrediction] = useState<Prediction | null>(null);
-    const [patientName, setPatientName] = useState('');
+    const [patientName, setPatientName] = useState(authPatientName || '');
     const [patientEmail, setPatientEmail] = useState('');
     const [patientPhone, setPatientPhone] = useState('');
     const [loading, setLoading] = useState(true);
@@ -77,15 +88,27 @@ const BookingForm: React.FC<BookingFormProps> = ({ doctor, onComplete }) => {
         setError('');
 
         try {
-            const result = await bookSlot(doctor.id, { 
-                patientName, 
-                patientEmail,
-                patientPhone,
-                slotTime: selectedSlot 
-            });
+            let result;
+            
+            // If authenticated, use the authenticated booking endpoint
+            if (isAuthenticated && patientId) {
+                result = await bookAppointmentForPatient(doctor.id, {
+                    slotTime: selectedSlot
+                });
+            } else {
+                // Guest booking (non-authenticated)
+                result = await bookSlot(doctor.id, { 
+                    patientName, 
+                    patientEmail,
+                    patientPhone,
+                    slotTime: selectedSlot 
+                });
+            }
+            
             setConfirmationCode(result.confirmationCode);
             setBooked(true);
             if (onComplete) onComplete();
+            if (onBookingComplete) onBookingComplete();
         } catch (err: any) {
             setError(err.response?.data?.error || 'Booking failed. Please try again.');
         } finally {
@@ -385,8 +408,47 @@ const BookingForm: React.FC<BookingFormProps> = ({ doctor, onComplete }) => {
                                         </div>
                                     )}
                                     
-                                    <div className="form-group">
-                                        <label className="form-label">Full Name *</label>
+                                    {/* Show simplified form for authenticated patients */}
+                                    {isAuthenticated && patientId ? (
+                                        <div style={{
+                                            background: 'var(--primary-50)',
+                                            border: '1px solid var(--primary-100)',
+                                            borderRadius: 'var(--radius-lg)',
+                                            padding: 'var(--space-4)',
+                                            marginBottom: 'var(--space-4)'
+                                        }}>
+                                            <div className="flex items-center gap-3">
+                                                <div style={{
+                                                    width: '40px',
+                                                    height: '40px',
+                                                    borderRadius: 'var(--radius-full)',
+                                                    background: 'linear-gradient(135deg, var(--primary-500), var(--accent-500))',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    color: 'white',
+                                                    fontWeight: 600
+                                                }}>
+                                                    {patientName.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontWeight: 600, color: 'var(--gray-900)' }}>
+                                                        {patientName}
+                                                    </div>
+                                                    <div style={{ fontSize: '0.8125rem', color: 'var(--gray-500)' }}>
+                                                        Booking as logged in patient
+                                                    </div>
+                                                </div>
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--success-500)" strokeWidth="2" style={{ marginLeft: 'auto' }}>
+                                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                                                    <polyline points="22 4 12 14.01 9 11.01" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="form-group">
+                                                <label className="form-label">Full Name *</label>
                                         <input
                                             type="text"
                                             className="form-input"
@@ -419,6 +481,8 @@ const BookingForm: React.FC<BookingFormProps> = ({ doctor, onComplete }) => {
                                             onChange={(e) => setPatientPhone(e.target.value)}
                                         />
                                     </div>
+                                        </>
+                                    )}
                                     
                                     <button 
                                         onClick={handleBooking} 

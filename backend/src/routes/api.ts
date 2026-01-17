@@ -113,6 +113,33 @@ router.get('/patient/appointments', authenticatePatient, async (req, res) => {
     }
 });
 
+// Book appointment for authenticated patient
+router.post('/patient/book', authenticatePatient, async (req, res) => {
+    const { doctorId, slotTime } = req.body;
+    if (!doctorId || !slotTime) {
+        return res.status(400).json({ error: 'Missing required fields: doctorId, slotTime' });
+    }
+    try {
+        // Get patient profile for name
+        const profile = await authController.getPatientProfile(req.patient.id);
+        const result = await database.bookSlot(doctorId, {
+            patientName: profile.name,
+            patientEmail: profile.email,
+            patientPhone: profile.phone,
+            slotTime: new Date(slotTime),
+            patientId: req.patient.patientId // Link to patient account
+        });
+        res.json({ 
+            success: true, 
+            message: 'Appointment booked successfully!',
+            confirmationCode: result.confirmationCode,
+            appointmentId: result.id
+        });
+    } catch (e: any) {
+        res.status(400).json({ error: e.message });
+    }
+});
+
 router.post('/patient/change-password', authenticatePatient, async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;

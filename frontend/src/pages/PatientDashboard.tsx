@@ -168,7 +168,7 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({ patientId, patientN
                         </Link>
                         
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-                            <Link to="/patient" className="btn btn-outline btn-sm">
+                            <Link to="/patient/book" className="btn btn-outline btn-sm">
                                 Book Appointment
                             </Link>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
